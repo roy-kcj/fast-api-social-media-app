@@ -1,3 +1,18 @@
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/*.db
+backend/*.sqlite3
+backend/.pytest_cache/
+backend/.coverage
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+
 # Python
 __pycache__/
 *.py[cod]

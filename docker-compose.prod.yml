@@ -1,17 +1,18 @@
 services:
+  # FastAPI Backend (Production)
   api:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     
-    container_name: fastapi-api-prod
+    container_name: social-api-prod
     
     ports:
       - "8000:8000"
     
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/social_app}
+      - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD}@redis:6379/0}
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=false
     
@@ -20,7 +21,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    
+        
+    # Production server with multiple workers
     command: >
       gunicorn src.main:app
       --workers 4
@@ -29,7 +31,6 @@ services:
       --access-logfile -
       --error-logfile -
     
-    # Resource limits
     deploy:
       resources:
         limits:
@@ -41,7 +42,6 @@ services:
     
     restart: always
     
-    # Health check for load balancers / orchestrators
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -49,11 +49,37 @@ services:
       retries: 3
       start_period: 40s
 
+  # Next.js Frontend (Production)
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    
+    container_name: social-web-prod
+    
+    ports:
+      - "3000:3000"
+    
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_URL:-http://localhost:8000}
+      - NODE_ENV=production
+        
+    # Production Next.js server
+    command: npm start
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    
+    restart: always
+
   # PostgreSQL Database (Production)
   db:
     image: postgres:15-alpine
     
-    container_name: fastapi-db-prod
+    container_name: social-db-prod
     
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -62,7 +88,7 @@ services:
     
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
-
+ 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -77,16 +103,14 @@ services:
     
     restart: always
 
-  # Redis Cache (Production)
   redis:
     image: redis:7-alpine
     
-    container_name: fastapi-redis-prod
+    container_name: social-redis-prod
     
     volumes:
       - redis_data_prod:/data
     
-    # Production Redis config: persistence + password
     command: >
       redis-server
       --appendonly yes

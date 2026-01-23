@@ -1,16 +1,12 @@
 services:
+  # FastAPI Backend
   api:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    
-    container_name: fastapi-api
-    
-    # Map port 8000 on your machine to port 8000 in container
+    container_name: social-api
     ports:
       - "8000:8000"
-    
-    # Environment variables for the app
     environment:
       # PostgreSQL connection (matches 'db' service below)
       - DATABASE_URL=postgres://postgres:postgres@db:5432/social_app
@@ -19,31 +15,36 @@ services:
       # App settings
       - SECRET_KEY=dev-secret-key-change-in-production
       - DEBUG=true
-    
-    # Wait for database and redis to be ready before starting
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_started
-    
     volumes:
-      - .:/app
-    
-    # Override the Dockerfile CMD for development
-    # --reload watches for file changes and restarts the server
+      - ./backend:/app
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
-    
-    # Restart if it crashes
-    restart: unless-stopped
+
+  # Next.js Frontend
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: social-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
 
   # PostgreSQL Database
   db:
-    # Use PostgreSQL 15 with Alpine Linux
     image: postgres:15-alpine
     
-    container_name: fastapi-db
-    
+    container_name: social-db
+
     # Database configuration
     environment:
       POSTGRES_USER: postgres
@@ -64,15 +65,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    
-    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: social-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
 
   # Redis Cache
   redis:
-    # Redis 7 with Alpine Linux
     image: redis:7-alpine
-    
-    container_name: fastapi-redis
+    container_name: social-redis
     
     # Expose Redis port
     ports:
@@ -81,28 +89,6 @@ services:
     # Persist Redis data
     volumes:
       - redis_data:/data
-    
-    # Enable persistence so data survives restarts
-    command: redis-server --appendonly yes
-    
-    restart: unless-stopped
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    
-    container_name: fastapi-pgadmin
-    
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    
-    ports:
-      - "5050:80"
-    
-    depends_on:
-      - db
-    
-    restart: unless-stopped
 
 volumes:
   postgres_data:
