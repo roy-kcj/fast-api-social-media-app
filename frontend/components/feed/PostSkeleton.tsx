@@ -13,7 +13,7 @@ export function PostSkeleton() {
             </div>
 
             {/* Content Body */}
-            <div className="space-y-2">
+            <div className="space-y-2 pl-13">
                 <div className="h-3 w-3/4 bg-gray-200 rounded animate-pulse" />
                 <div className="h-3 w-1/2 bg-gray-200 rounded animate-pulse" />
                 <div className="h-3 w-1/3 bg-gray-200 rounded animate-pulse" />
@@ -21,7 +21,7 @@ export function PostSkeleton() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-8 mt-4">
+            <div className="flex gap-8 mt-4 pl-13">
                 <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
                 <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
                 <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />

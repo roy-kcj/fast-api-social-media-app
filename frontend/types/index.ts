@@ -60,6 +60,12 @@ export interface PostList {
   has_more: boolean;
 }
 
+
+export interface FollowResponse {
+  following: boolean;
+  follower_count: number;
+}
+
 // Auth Types
 export interface TokenResponse {
   access_token: string;

@@ -15,23 +15,34 @@ const SIZES = {
     xl: { class: 'w-16 h-16 text-lg', pixels: 64 },
 };
 
+function isValidUrl(str: string): boolean {
+    try {
+        new URL(str);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export function Avatar({ username, src, size = 'md', className = '' }: AvatarProps) {
     const { class: sizeClass, pixels } = SIZES[size];
+
+    const validSrc = src && isValidUrl(src) ? src : null;
 
     return (
         <div
             className={`
-            ${sizeClass}
-            rounded-full bg-gray-200
-            flex-shrink-0 overflow-hidden
-            flex items-center justify-center
-            relative
-            ${className}
+                ${sizeClass}
+                rounded-full bg-gray-200
+                flex-shrink-0 overflow-hidden
+                flex items-center justify-center
+                relative
+                ${className}
             `}
         >
-            {src ? (
+            {validSrc ? (
                 <Image
-                    src={src}
+                    src={validSrc}
                     alt={username || 'User'}
                     fill
                     className="object-cover"
