@@ -12,6 +12,8 @@ backend/.coverage
 frontend/node_modules/
 frontend/.next/
 frontend/.env.local
+frontend/.env.prod
+!frontend/lib/api.ts
 
 # Python
 __pycache__/
@@ -46,6 +48,7 @@ env/
 .env
 .env.local
 .env.*.local
+.env.prod
 # BUT DO commit the example/template:
 !.env.example
 

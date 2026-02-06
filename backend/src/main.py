@@ -51,13 +51,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS - Configure for your frontend
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",  # Next.js dev server
         "http://localhost:5173",  # Vite dev server
-        # Add production frontend URL here
+        settings.frontend_url,
     ],
     allow_credentials=True,
     allow_methods=["*"],

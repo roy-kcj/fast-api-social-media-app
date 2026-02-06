@@ -1,4 +1,3 @@
-# backend/src/services/views.py
 import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
@@ -17,8 +16,7 @@ def pending_views_key() -> str:
 
 
 class ViewService:
-    # How long to keep views in Redis (7 days)
-    VIEW_EXPIRY_SECONDS = 7 * 24 * 60 * 60
+    VIEW_EXPIRY_SECONDS = 7 * 24 * 60 * 60 # 7 days
     
     async def mark_viewed(self, user_id: int, post_ids: list[int]) -> None:
         """
@@ -73,12 +71,10 @@ class ViewService:
         """
         redis = await get_redis()
         
-        # Get all pending views
         pending = await redis.smembers(pending_views_key())
         if not pending:
             return 0
         
-        # Parse and batch insert
         from src.models.post_view import PostView  # Import here to avoid circular
         
         views_to_create = []
