@@ -40,13 +40,15 @@ class User(Model):
     
     profile_image = fields.CharField(
         max_length=500,
-        default="default_profile.jpg",
+        null=True,
+        default=None,
         description="Profile image URL"
     )
     
     banner_image = fields.CharField(
         max_length=500,
         null=True,
+        default=None,
         description="Profile banner image URL"
     )
     

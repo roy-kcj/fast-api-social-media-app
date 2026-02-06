@@ -7,7 +7,7 @@ class UserBrief(BaseModel):
     id: int
     username: str
     display_name: Optional[str] = None
-    profile_image: str
+    profile_image: Optional[str] = None
     is_verified: bool = False
     
     class Config:
@@ -19,7 +19,7 @@ class UserOut(BaseModel):
     username: str
     display_name: Optional[str] = None
     bio: Optional[str] = None
-    profile_image: str
+    profile_image: Optional[str] = None
     banner_image: Optional[str] = None
     is_verified: bool
     created_at: datetime

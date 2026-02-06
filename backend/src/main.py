@@ -1,11 +1,26 @@
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.core.redis import close_redis
+from src.tasks.flush_views import flush_views_job
 from src.database import init_db
 from src.core.config import get_settings
 from src.routers import auth, posts, tags, users
 
 settings = get_settings()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    flush_task = asyncio.create_task(flush_views_job())
+    
+    yield
+    
+    # Shutdown
+    flush_task.cancel()
+    await close_redis()
 
 app = FastAPI(
     title=settings.app_name,
@@ -33,6 +48,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS - Configure for your frontend
@@ -41,7 +57,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",  # Next.js dev server
         "http://localhost:5173",  # Vite dev server
-        # Add your production frontend URL here
+        # Add production frontend URL here
     ],
     allow_credentials=True,
     allow_methods=["*"],

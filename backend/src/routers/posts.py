@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Literal, Optional
 from fastapi import APIRouter, Query, status, Depends
 from typing import Annotated
+from src.services.views import view_service
 
 from src.models.user import User
 from src.schemas.post import (
@@ -71,19 +72,21 @@ async def create_post(
     summary="List posts",
 )
 async def list_posts(
-    user: OptionalUser,  # Optional - affects is_liked field
+    user: OptionalUser,
     tags: Optional[list[str]] = Query(None, description="Filter by tag name"),
     author_id: Optional[int] = Query(None, description="Filter by author ID"),
+    sort_by: Literal["recent", "popular"] = Query("recent", description="Sort order"),
     limit: int = Query(20, ge=1, le=100, description="Max posts to return"),
     offset: int = Query(0, ge=0, description="Number of posts to skip"),
 ):
-
+    
     return await post_service.list_posts(
         limit=limit,
         offset=offset,
         author_id=author_id,
         tags=tags,
         current_user=user,
+        sort_by=sort_by,
     )
 
 
@@ -215,3 +218,18 @@ async def get_user_posts(
         author_id=author.id,
         current_user=user,
     )
+
+@router.post(
+    "/views",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Track viewed posts",
+)
+async def track_views(
+    post_ids: list[int],
+    user: CurrentUser,
+):
+    """
+    Mark posts as viewed by current user.
+    Used for feed personalization.
+    """
+    await view_service.mark_viewed(user.id, post_ids)

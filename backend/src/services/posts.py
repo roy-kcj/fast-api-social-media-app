@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Literal, Optional
 from fastapi import HTTPException, status
 from tortoise.expressions import Q
 from tortoise.functions import Count
 
+from src.services.views import view_service
 from src.models.post import Post
 from src.models.user import User
 from src.models.tag import Tag
@@ -84,7 +85,7 @@ class PostService:
             )
         
         return await self._post_to_schema(post, current_user)
-    
+
     async def list_posts(
         self,
         limit: int = 20,
@@ -92,6 +93,7 @@ class PostService:
         author_id: Optional[int] = None,
         tags: Optional[list[str]] = None,
         current_user: Optional[User] = None,
+        sort_by: Literal["recent", "popular"] = "recent",
     ) -> PostList:
         """
         List posts with filtering and pagination.
@@ -100,8 +102,9 @@ class PostService:
             limit: Max posts to return
             offset: Number of posts to skip
             author_id: Filter by author
-            tag: Filter by tag name
+            tags: Filter by tag name
             current_user: For is_liked status
+            sort_by: "recent" (default) or "popular" (by likes, then recency)
         
         Returns:
             PostList with items and pagination info
@@ -112,15 +115,25 @@ class PostService:
             query = query.filter(author_id=author_id)
         
         if tags:
-            query = query.filter(tags__name_in=[t.lower() for t in tags])
+            query = query.filter(tags__name__in=[t.lower() for t in tags])
         
         # Get total count for pagination
         total = await query.count()
         
+        # Apply sorting
+        if sort_by == "popular":
+            # Sort by like_count descending, then by created_at descending
+            query = query.annotate(
+                likes=Count("liked_by")
+            ).order_by("-likes", "-created_at")
+        else:
+            # Default: most recent first
+            query = query.order_by("-created_at")
+        
         # Fetch posts with relationships
         posts = await query.prefetch_related(
             "author", "tags", "liked_by"
-        ).order_by("-created_at").offset(offset).limit(limit)
+        ).offset(offset).limit(limit)
         
         # Convert to schemas
         items = [
@@ -145,29 +158,54 @@ class PostService:
         """
         Get personalized feed for a user.
         
-        Shows posts from:
-        - Users they follow
-        - Their own posts
-        
-        This is a simple chronological feed. For production,
-        you'd want algorithmic ranking, Redis caching, etc.
-        """
-        # Get IDs of users being followed
+        Algorithm:
+        1. Get posts from followed users + own posts
+        2. Sort: unviewed first, then by recency
+        3. Never hide viewed posts, just deprioritize
+        """        
+        # Get IDs of users being followed + self
         following_ids = await user.following.all().values_list("id", flat=True)
         following_ids = list(following_ids) + [user.id]  # Include own posts
         
+        if not following_ids:
+            return PostList(
+                items=[],
+                total=0,
+                limit=limit,
+                offset=offset,
+                has_more=False,
+            )
+        
+        # Get viewed post IDs from Redis
+        viewed_post_ids = await view_service.get_viewed_posts(user.id)
+        
+        # Build query
         query = Post.filter(
             is_deleted=False,
-            author_id__in=following_ids
+            author_id__in=following_ids,
         )
         
         total = await query.count()
         
         posts = await query.prefetch_related(
             "author", "tags", "liked_by"
-        ).order_by("-created_at").offset(offset).limit(limit)
+        ).order_by("-created_at").offset(offset).limit(limit * 2) 
+        # Sort: unviewed first, then by recency
+        def sort_key(post):
+            is_viewed = post.id in viewed_post_ids
+            is_own = post.author_id == user.id
+            # Own posts always on top
+            # Then unviewed, then viewed
+            # Within each group, sort by recency
+            return (
+                0 if is_own else (1 if not is_viewed else 2),  # Priority group
+                -post.created_at.timestamp(),  # Recency 
+            )
         
-        items = [await self._post_to_schema(post, user) for post in posts]
+        sorted_posts = sorted(posts, key=sort_key)[:limit]
+        
+        # Convert to schemas
+        items = [await self._post_to_schema(post, user) for post in sorted_posts]
         
         return PostList(
             items=items,

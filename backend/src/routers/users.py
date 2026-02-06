@@ -71,6 +71,27 @@ async def update_my_profile(
     await user.save()
     return await _user_to_private_schema(user)
 
+from tortoise.expressions import Q
+
+@router.get(
+    "/search",
+    response_model=list[UserOut],
+    summary="Search users",
+)
+async def search_users(
+    q: str = Query(..., min_length=1, description="Search query"),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: OptionalUser = None,
+):
+    """
+    Search users by username or display name.
+    """
+    users = await User.filter(
+        Q(username__icontains=q) | Q(display_name__icontains=q),
+        is_active=True,
+    ).limit(limit)
+    
+    return [await _user_to_schema(user, current_user) for user in users]
 
 @router.get(
     "/{username}",
