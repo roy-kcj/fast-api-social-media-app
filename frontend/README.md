@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Social Media App - Frontend
 
-## Getting Started
+A modern Twitter-style social media web application built with Next.js.
 
-First, run the development server:
+## Features
+
+- **Authentication:** Login, registration with JWT token management
+- **Feed:** Personalized feed (Following) and discovery feed (Popular)
+- **Posts:** Create posts with hashtags, like/unlike
+- **Profiles:** View user profiles, follow/unfollow
+- **Explore:** Search posts by tags, discover users
+- **View Tracking:** Intersection Observer tracks viewed posts (50% visibility)
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Icons:** Lucide React
+- **State:** React Context (Auth)
+
+## Pages
+
+| Route                 | Description                          |
+| --------------------- | ------------------------------------ |
+| `/`                   | Home feed (Following / Popular tabs) |
+| `/login`              | Login page                           |
+| `/register`           | Registration page                    |
+| `/explore`            | Search posts and users               |
+| `/profile/[username]` | User profile page                    |
+| `/notifications`      | Notifications (coming soon)          |
+| `/chat`               | Messages (coming soon)               |
+
+## Local Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+frontend/
+├── app/                    # Next.js App Router pages
+│   ├── page.tsx           # Home feed
+│   ├── login/             # Login page
+│   ├── register/          # Registration page
+│   ├── explore/           # Search & discover
+│   ├── profile/[username] # User profiles
+│   ├── layout.tsx         # Root layout with sidebar
+│   └── globals.css        # Global styles
+├── components/
+│   ├── feed/              # Feed components
+│   │   ├── FeedTabs.tsx
+│   │   ├── PostCard.tsx
+│   │   ├── PostComposer.tsx
+│   │   ├── PostList.tsx
+│   │   └── PostSkeleton.tsx
+│   ├── sidebar/           # Navigation sidebar
+│   │   ├── Sidebar.tsx
+│   │   ├── UserAvatar.tsx
+│   │   └── UserMenu.tsx
+│   └── ui/                # Reusable UI components
+│       └── Avatar.tsx
+├── context/
+│   └── AuthContext.tsx    # Authentication state
+├── hooks/
+│   └── useViewTracking.ts # View tracking hook
+├── lib/
+│   └── api.ts             # API client
+├── types/
+│   └── index.ts           # TypeScript types
+├── Dockerfile
+└── README.md
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Key Components
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### PostCard
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Displays a single post with author info, content, tags, and action buttons (like, comment, repost). Uses Intersection Observer to track when 50% of the card is visible.
 
-## Deploy on Vercel
+### PostList
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Fetches and displays posts with loading skeletons and error states. Supports "following" (personalized) and "popular" (all posts sorted by likes) modes.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Sidebar
+
+Collapsible navigation with expand-on-hover, user avatar with status indicator, and dropdown menu.
+
+### AuthContext
+
+Global authentication state with login, logout, and register functions. Persists tokens to localStorage.
+
+## View Tracking
+
+Posts are marked as "viewed" when 50% visible using Intersection Observer:
+
+```tsx
+// In PostCard
+useEffect(() => {
+    const observer = new IntersectionObserver(
+        (entries) => {
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                onView(post.id); // Mark as viewed
+            }
+        },
+        { threshold: 0.5 },
+    );
+    // ...
+}, []);
+```
+
+Views are debounced and sent to the API in batches to reduce network requests.
