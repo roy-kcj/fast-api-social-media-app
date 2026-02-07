@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
@@ -12,7 +13,8 @@ import { Post, UserOut } from '@/types';
 
 type SearchType = 'posts' | 'users';
 
-export default function ExplorePage() {
+// Main content component
+function ExploreContent() {
     const searchParams = useSearchParams();
     const tagFromUrl = searchParams.get('tag');
 
@@ -131,7 +133,6 @@ export default function ExplorePage() {
 
             {/* Results */}
             {searchType === 'posts' ? (
-                // Posts results
                 posts === null ? (
                     <>
                         <PostSkeleton />
@@ -145,8 +146,7 @@ export default function ExplorePage() {
                 ) : (
                     posts.map((post) => <PostCard key={post.id} post={post} />)
                 )
-            ) : // Users results
-            !activeSearch ? (
+            ) : !activeSearch ? (
                 <div className="p-8 text-center text-gray-500">Enter a username to search</div>
             ) : users === null ? (
                 <div className="p-4 space-y-4">
@@ -190,5 +190,25 @@ function UserCard({ user }: { user: UserOut }) {
             </div>
             <div className="text-sm text-gray-500">{user.follower_count} followers</div>
         </Link>
+    );
+}
+
+// Main page with Suspense wrapper
+export default function ExplorePage() {
+    return (
+        <Suspense
+            fallback={
+                <div>
+                    <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-3">
+                        <h1 className="text-xl font-bold">Explore</h1>
+                    </div>
+                    <PostSkeleton />
+                    <PostSkeleton />
+                    <PostSkeleton />
+                </div>
+            }
+        >
+            <ExploreContent />
+        </Suspense>
     );
 }
