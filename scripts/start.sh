@@ -1,14 +1,17 @@
 #!/bin/bash
 echo "Starting Social Media App..."
 
-set -a
-source .env.prod
-set +a
+# Pull latest images
+docker compose -f docker-compose.prod.yml --env-file .env.prod pull
 
-# Build and start
-docker compose -f docker-compose.prod.yml up -d --build
+# Start containers
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo "localhost")
 
 echo "App started!"
-echo "API: http://$(curl -s ifconfig.me):8000"
-echo "Web: http://$(curl -s ifconfig.me):3000"
-echo "Health: http://$(curl -s ifconfig.me)/health"
+echo "API: http://${PUBLIC_IP}:8000"
+echo "Web: http://${PUBLIC_IP}:3000"
+echo "Health: http://${PUBLIC_IP}/health"
+echo "API Docs: http://${PUBLIC_IP}:8000/docs"
+echo "Run './scripts/logs.sh' to view logs"

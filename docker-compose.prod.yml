@@ -1,9 +1,7 @@
 services:
   # FastAPI Backend (Production)
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: rckay/social-api:latest
     
     container_name: social-api-prod
     
@@ -14,6 +12,7 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/social_app}
       - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD}@redis:6379/0}
       - SECRET_KEY=${SECRET_KEY}
+      - FRONTEND_URL=${FRONTEND_URL}
       - DEBUG=false
     
     depends_on:
@@ -51,9 +50,7 @@ services:
 
   # Next.js Frontend (Production)
   web:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: rckay/social-web:latest
     
     container_name: social-web-prod
     
@@ -63,9 +60,6 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=${API_URL:-http://localhost:8000}
       - NODE_ENV=production
-        
-    # Production Next.js server
-    command: npm start
     
     deploy:
       resources:
